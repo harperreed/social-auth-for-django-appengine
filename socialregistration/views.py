@@ -138,7 +138,7 @@ def twitter(request):
     
     if user is None:
         profile = TwitterProfile(twitter_id=user_info['id'])
-        user = User()
+        user = User(username=str(user_info['id']))
         request.session['socialregistration_profile'] = profile
         request.session['socialregistration_user'] = user
         request.session['next'] = _get_next(request)
