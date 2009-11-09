@@ -1,6 +1,12 @@
+{% extends 'base.html' %}
+
+{% block title %}Setup your account{% endblock %}
+{% block content%}
+<h1>Setup your account</h1>
 <form action="." method="post">
     <table>
         {{ form }}
     </table>
     <input type="submit" value="save" />
 </form>
+{% endblock %}

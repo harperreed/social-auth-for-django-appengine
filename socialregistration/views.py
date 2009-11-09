@@ -22,6 +22,8 @@ from socialregistration.utils import (OAuthClient, OAuthTwitter, OAuthFriendFeed
     OpenID)
 from socialregistration.models import FacebookProfile, TwitterProfile, OpenIDProfile
 
+from facebook import Facebook
+
 
 FB_ERROR = _('We couldn\'t validate your Facebook credentials')
 
@@ -77,7 +79,8 @@ def facebook_login(request, template='socialregistration/facebook.html',
     """
     View to handle the Facebook login 
     """
-    if not request.facebook.check_session(request):
+    fb = Facebook(settings.FACEBOOK_API_KEY, settings.FACEBOOK_SECRET_KEY)
+    if not fb.check_session(request):
         extra_context.update(
             dict(error=FB_ERROR)
         )
@@ -85,12 +88,14 @@ def facebook_login(request, template='socialregistration/facebook.html',
             template, extra_context, context_instance=RequestContext(request)
         )
     
-    user = authenticate(uid=request.facebook.uid)
+    user = authenticate(uid=fb.uid)
+    print "asd"
+    print fb
     
     if user is None:
-        request.session['socialregistration_user'] = User()
+        request.session['socialregistration_user'] = User(username='fb')
         request.session['socialregistration_profile'] = FacebookProfile(
-            uid=request.facebook.uid
+            uid=fb.uid
         )
         request.session['next'] = _get_next(request)
         return HttpResponseRedirect(reverse('socialregistration_setup'))
