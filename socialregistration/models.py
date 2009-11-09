@@ -20,6 +20,7 @@ class FacebookProfile(db.Model):
     user = db.ReferenceProperty(User)
     site = db.ReferenceProperty(Site,)# default=Site.objects.get_current())
     uid = db.StringProperty()
+    username = db.StringProperty()
     
     def __unicode__(self):
         return '%s: %s' % (self.user, self.uid)
@@ -31,7 +32,8 @@ class TwitterProfile(db.Model):
     user = db.ReferenceProperty(User)
     site = db.ReferenceProperty(Site,)# default=Site.objects.get_current())
     twitter_id =  db.IntegerProperty()
-    
+    username = db.StringProperty()
+
     def __unicode__(self):
         return '%s: %s' % (self.user, self.twitter_id)
     

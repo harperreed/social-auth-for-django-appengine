@@ -20,7 +20,10 @@ class UserForm(forms.Form):
     def clean_username(self):
         username = self.cleaned_data.get('username')
         try:
-            user = User.objects.get(username=username)
+            #user = User.objects.get(username=username)
+            user = User.all()
+            user.filter('username = ',username)
+            username = user[0]
         except: 
             return username
         else:

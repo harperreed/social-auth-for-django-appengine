@@ -89,13 +89,13 @@ def facebook_login(request, template='socialregistration/facebook.html',
         )
     
     user = authenticate(uid=fb.uid)
-    print "asd"
-    print fb
+    username = fb.users.getInfo(fb.uid, ['name', ])[0]['name']
     
     if user is None:
-        request.session['socialregistration_user'] = User(username='fb')
+        request.session['socialregistration_user'] = User(username=username)
         request.session['socialregistration_profile'] = FacebookProfile(
-            uid=fb.uid
+            uid=fb.uid,
+            username = username
         )
         request.session['next'] = _get_next(request)
         return HttpResponseRedirect(reverse('socialregistration_setup'))
