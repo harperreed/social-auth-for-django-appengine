@@ -22,25 +22,27 @@ class Auth(object):
 class FacebookAuth(Auth):
     def authenticate(self, uid=None):
         try:
-            return FacebookProfile.objects.get(
-                uid=uid,
-                site=Site.objects.get_current()
-            ).user
+            facebook_profile = FacebookProfile.all()
+            facebook_profile.filter('uid = ',uid)
+            #facebook_profile.filter('site = ',Site.objects.get_current())
+            facebook_profile = facebook_profile.fetch(1)
+            auth_user = facebook_profile[0].user
+
+            return auth_user
+            #return FacebookProfile.objects.get(
+            #    uid=uid,
+            #    site=Site.objects.get_current()
+            #).user
         except:
             return None
 
 class TwitterAuth(Auth):
     def authenticate(self, twitter_id=None):
-        #try:
-        print "awewdsd"
-        if 8==8:
-            print "asd"
-            print twitter_id
+        try:
             twitter_profile = TwitterProfile.all()
             twitter_profile.filter('twitter_id = ',twitter_id)
             #twitter_profile.filter('site = ',Site.objects.get_current())
             twitter_profile = twitter_profile.fetch(1)
-            print twitter_profile
             auth_user = twitter_profile[0].user
 
             return auth_user
@@ -48,8 +50,6 @@ class TwitterAuth(Auth):
                 #twitter_id=twitter_id,
                 #site=Site.objects.get_current()
             #).user
-        try:
-            pass
         except:
             return None
         
@@ -58,7 +58,7 @@ class OpenIDAuth(Auth):
         try:
             openid_profile = OpenIDProfile.all()
             openid_profile.filter('identity = ',identity)
-            #openid_profile.filter('site = ',Site.objects.get_current())
+            openid_profile.filter('site = ',Site.objects.get_current())
             openid_profile = openid_profile.fetch(1)
             auth_user = openid_profile[0].user
             return auth_user
