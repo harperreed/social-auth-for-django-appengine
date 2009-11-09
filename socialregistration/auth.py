@@ -58,7 +58,7 @@ class OpenIDAuth(Auth):
         try:
             openid_profile = OpenIDProfile.all()
             openid_profile.filter('identity = ',identity)
-            openid_profile.filter('site = ',Site.objects.get_current())
+            #openid_profile.filter('site = ',Site.objects.get_current())
             openid_profile = openid_profile.fetch(1)
             auth_user = openid_profile[0].user
             return auth_user

@@ -227,7 +227,7 @@ def openid_callback(request, template='socialregistration/openid.html',
     if client.is_valid():
         user = authenticate(identity=request.GET.get('openid.claimed_id'))
         if user is None:
-            user = User(username=request.GET.get('openid.claimed_id'))
+            user = User(username='openid')
             request.session['socialregistration_user'] = user
             request.session['socialregistration_profile'] = OpenIDProfile(
                 identity=request.GET.get('openid.claimed_id')
