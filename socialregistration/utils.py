@@ -154,7 +154,7 @@ class OAuthClient(oauth.OAuthClient):
         try:
             return urllib2.urlopen(oauth_request.to_url()).read()
         except:
-            raise HttpResponseServerError(_('We couldn\'t reach the service. Please try again later.'))
+            raise 'We couldn\'t reach the service. Please try again later.'
         
     def get_request_token(self):
         """

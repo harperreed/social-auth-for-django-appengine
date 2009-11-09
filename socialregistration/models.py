@@ -18,7 +18,7 @@ from django.contrib.sites.models import Site
 
 class FacebookProfile(db.Model):
     user = db.ReferenceProperty(User)
-    site = db.ReferenceProperty(Site,)# default=Site.objects.get_current)
+    site = db.ReferenceProperty(Site,)# default=Site.objects.get_current())
     uid = db.StringProperty()
     
     def __unicode__(self):
@@ -29,7 +29,7 @@ class FacebookProfile(db.Model):
     
 class TwitterProfile(db.Model):
     user = db.ReferenceProperty(User)
-    site = db.ReferenceProperty(Site,)# default=Site.objects.get_current)
+    site = db.ReferenceProperty(Site,)# default=Site.objects.get_current())
     twitter_id =  db.IntegerProperty()
     
     def __unicode__(self):
@@ -40,18 +40,18 @@ class TwitterProfile(db.Model):
 
 class FriendFeedProfile(db.Model):
     user = db.ReferenceProperty(User)
-    site = db.ReferenceProperty(Site,)# default=Site.objects.get_current)
+    site = db.ReferenceProperty(Site,)# default=Site.objects.get_current())
 
 class OpenIDProfile(db.Model):
     user = db.ReferenceProperty(User)
-    site = db.ReferenceProperty(Site,)# default=Site.objects.get_current)
-    identity = db.TextProperty()
+    site = db.ReferenceProperty(Site,)# default=Site.objects.get_current())
+    identity = db.StringProperty()
     
     def authenticate(self):
         return authenticate(identity=self.identity)
 
 class OpenIDStore(db.Model):
-    site = db.ReferenceProperty(Site,)# default=Site.objects.get_current)
+    site = db.ReferenceProperty(Site,)# default=Site.objects.get_current())
     server_url = db.StringProperty()
     handle = db.StringProperty()
     secret = db.TextProperty()
