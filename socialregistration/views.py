@@ -108,8 +108,10 @@ def facebook_connect(request, template='socialregistration/facebook.html',
     extra_context=dict()):
     """
     View to handle connecting existing accounts with facebook
+    TODO: Need to fix this
     """
-    if not request.facebook.check_session(request) \
+    fb = Facebook(settings.FACEBOOK_API_KEY, settings.FACEBOOK_SECRET_KEY)
+    if not fb.check_session(request) \
         or not request.user.is_authenticated():
         extra_context.update(
             dict(error=FB_ERROR)
@@ -119,10 +121,17 @@ def facebook_connect(request, template='socialregistration/facebook.html',
             extra_context,
             context_dict=RequestContext(request)
         )
-    
-    profile, created = FacebookProfile.objects.get_or_create(
-        user=request.user, uid=request.facebook.uid
+
+    request.session['socialregistration_user'] = request.user
+    request.session['socialregistration_profile'] = FacebookProfile(
+        uid=fb.uid,
+        user= request.user
     )
+    request.session['next'] = _get_next(request)
+    
+    #profile = FacebookProfile(
+    #    user=request.user, uid=fb.uid
+    #)
     
     return HttpResponseRedirect(_get_next(request))
 
