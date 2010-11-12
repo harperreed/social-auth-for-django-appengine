@@ -17,11 +17,14 @@ import oauth as oauth
 from openid.consumer import consumer as openid
 from openid.store.interface import OpenIDStore as OIDStore
 from openid.association import Association as OIDAssociation
+from openid.extensions import sreg as oid_sreg,\
+                              ax as oid_ax
 
 from django.http import HttpResponseRedirect, HttpResponseServerError
 from django.core.urlresolvers import reverse
 from django.utils.translation import gettext as _
 
+from django.conf import settings
 from django.utils import simplejson
 
 from django.contrib.sites.models import Site
@@ -90,6 +93,17 @@ class OpenIDStore(OIDStore):
         
         return False
             
+_ax_sreg_mapping = {
+    'email': 'http://axschema.org/contact/email',
+    'nickname': 'http://axschema.org/namePerson/friendly',
+    'fullname': 'http://axschema.org/namePerson',
+    'dob': 'http://axschema.org/birthDate',
+    'gender': 'http://axschema.org/person/gender',
+    'postcode': 'http://axschema.org/contact/postalCode/home',
+    'country': 'http://axschema.org/contact/country/home',
+    'language': 'http://axschema.org/pref/language',
+    'timezone': 'http://axschema.org/pref/timezone',
+}           
 
 class OpenID(object):
     def __init__(self, request, return_to, endpoint):
@@ -104,11 +118,23 @@ class OpenID(object):
         self.endpoint = endpoint
         self.store = OpenIDStore()
         self.consumer = openid.Consumer(self.request.session, self.store)
+        self.sreg = getattr(settings, 'OPENID_REGISTRATION_FIELDS', None)
 
         self.result = None
     
     def get_redirect(self):
         auth_request = self.consumer.begin(self.endpoint)
+        if self.sreg:
+            auth_request.addExtension(oid_sreg.SRegRequest(**self.sreg))
+            ax_request = oid_ax.FetchRequest()
+            for mode, attributes in self.sreg.items():
+                for attribute in attributes:
+                    if attribute in _ax_sreg_mapping:
+                        ax_request.add(oid_ax.AttrInfo(_ax_sreg_mapping[attribute],
+                                                       count=1,
+                                                       required=mode=='required',
+                                                       alias=attribute))
+            auth_request.addExtension(ax_request)
         redirect_url = auth_request.redirectURL(
             'http://%s/' % Site.objects.get_current().domain,
             self.return_to
@@ -120,7 +146,19 @@ class OpenID(object):
             dict(self.request.GET.items()),
             'http://%s%s' % (Site.objects.get_current(), self.request.path)
         )
-        
+        if self.result.status == openid.SUCCESS and self.sreg:
+            self._sreg_response = oid_sreg.SRegResponse.fromSuccessResponse(self.result)
+            self._ax_response = oid_ax.FetchResponse.fromSuccessResponse(self.result)
+            self.registration_data = {}
+            for keys in self.sreg.values(): # optional, required
+                for key in keys:
+                    if self._sreg_response and key in self._sreg_response.data:
+                        self.registration_data[key] = self._sreg_response.data[key]
+                    elif self._ax_response and _ax_sreg_mapping[key] in self._ax_response.data:
+                        val = self._ax_response.data[_ax_sreg_mapping[key]]
+                        if len(val):
+                            self.registration_data[key] = val[0]
+                
     def is_valid(self):
         if self.result is None:
             self.complete()

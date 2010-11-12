@@ -47,6 +47,44 @@ def setup(request, template='socialregistration/setup.html',
     """
     Setup view to create a username & set email address after authentication
     """
+    
+    try:
+        new_profile = request.session['socialregistration_profile'] 
+    except KeyError:
+        return HttpResponseRedirect(_get_next(request))
+    if request.user.is_authenticated():
+#       user exists, add profile or suggest merging 
+        new_profile.user = request.user
+        new_profile.save()
+        del request.session['socialregistration_user']
+        del request.session['socialregistration_profile']
+        return HttpResponseRedirect(_get_next(request))
+    else:
+#        this is a new user, create it for them...
+        username = new_profile.get_internal_username()
+        new_user = User(username=username)
+        new_user.put()
+        new_profile.user = new_user
+        new_profile.save()
+        user = new_profile.authenticate()
+        login(request, user)
+        try:
+            del request.session['socialregistration_user']
+        except:
+            pass
+        try:
+            del request.session['socialregistration_profile']
+        except:
+            pass
+        return HttpResponseRedirect(_get_next(request))
+        
+        
+
+
+
+
+#The original version, for posterity and reference right now...        
+    
     if not request.method == "POST":
         form = form_class(
             request.session['socialregistration_user'],
@@ -89,13 +127,16 @@ def facebook_login(request, template='socialregistration/facebook.html',
         )
     
     user = authenticate(uid=fb.uid)
-    username = fb.users.getInfo(fb.uid, ['name', ])[0]['name']
+    fb_info = fb.users.getInfo(fb.uid, ['name','email','pic_square','username', ])[0]
     
     if user is None:
         request.session['socialregistration_user'] = User(username=username)
         request.session['socialregistration_profile'] = FacebookProfile(
             uid=fb.uid,
-            username = username
+            username = fb_info['username'],
+            real_name = fb_info['name'],
+            email = fb_info['email'],
+            pic_url = fb_info['pic_square'],
         )
         request.session['next'] = _get_next(request)
         return HttpResponseRedirect(reverse('socialregistration_setup'))
@@ -151,7 +192,12 @@ def twitter(request):
     user = authenticate(twitter_id=user_info['id'])
     
     if user is None:
-        profile = TwitterProfile(twitter_id=user_info['id'])
+        profile = TwitterProfile(
+             twitter_id=user_info['id'], 
+             username=user_info['screen_name'], 
+             real_name=user_info['name'],
+             pic_url = user_info['profile_image_url'],
+             )
         user = User(username=str(user_info['id']))
         request.session['socialregistration_profile'] = profile
         request.session['socialregistration_user'] = user
@@ -234,12 +280,21 @@ def openid_callback(request, template='socialregistration/openid.html',
     )
     
     if client.is_valid():
+#        print request.path
         user = authenticate(identity=request.GET.get('openid.claimed_id'))
         if user is None:
             user = User(username='openid')
             request.session['socialregistration_user'] = user
             request.session['socialregistration_profile'] = OpenIDProfile(
-                identity=request.GET.get('openid.claimed_id')
+                identity=request.GET.get('openid.claimed_id'),
+#                openid.ax.value.fullname
+#                openid.ax.value.nickname
+#                openid.ax.value.email
+
+                real_name=request.GET.get('openid.ax.value.fullname'),
+                internal_username=request.GET.get('openid.ax.value.nickname'),
+                email=request.GET.get('openid.ax.value.email'),
+#                eventually get profile image as well? http://axschema.org/media/image/aspect11
             )
             return HttpResponseRedirect(reverse('socialregistration_setup'))
         else:

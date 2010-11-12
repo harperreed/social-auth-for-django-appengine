@@ -1,7 +1,12 @@
-
+{% if user.facebook_profiles %}
+{% for profile in user.facebook_profiles %}
+	connected to facebook as {{ profile.username}}
+{% endfor %}
+{% else %}
 <form class="connect-button" name="login" method="post" action="{% if logged_in %}{% url facebook_connect %}{% else %}{% url facebook_login %}{% endif %}">
 {% if next %}
     <input type="hidden" name="next" value="{{ next }}" />
 {% endif %}
 <input type="image" onclick="facebookConnect(this.form);return false;" src="http://static.ak.fbcdn.net/images/fbconnect/login-buttons/connect_light_large_long.gif" />
 </form>
+{% endif %}

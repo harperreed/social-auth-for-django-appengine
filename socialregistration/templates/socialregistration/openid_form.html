@@ -1,4 +1,14 @@
+{% if user.openid_profiles %}
+<h2>Linked OpenIDs</h2>
+<ul>
+{% for profile in user.openid_profiles %}
+<li><a href="{{ profile.identity }}">{{profile.identity}}</a></li>
+{% endfor %}
+</ul>
+{% endif %}
+<p>Add an OpenID:</p>
 <form action="{% url openid_redirect %}" method="GET">
+	<label>url:</label>
     <input type="text" name="openid_provider" />
     <input type="submit" value="Connect with OpenID" />
 </form>

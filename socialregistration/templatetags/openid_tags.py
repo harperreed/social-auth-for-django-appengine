@@ -7,6 +7,7 @@ from django import template
 
 register = template.Library()
 
-@register.inclusion_tag('socialregistration/openid_form.html')
-def openid_form():
-    return {}
+@register.inclusion_tag('socialregistration/openid_form.html', takes_context = True)
+def openid_form(context):
+    request = context['request']
+    return {'user': request.user }
