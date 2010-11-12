@@ -1,0 +1,24 @@
+Social Authentication for Django App-engine
+----------------------------------------------
+
+Possibly forked from: https://github.com/flashingpumpkin/django-socialregistration
+------------------
+
+Allow you to login, authenticate and get permissions for Twitter, Facebook and OpenID. 
+
+Right now it is gaining features and losing some. 
+
+This works only on app engine. It uses app engine native datastore. I
+
+
+
+
+
+
+------------------
+
+Harper Reed - harper@nata2.org - @harper
+Dylan Richard - detour1999@gmail.com - @detour1999
+
+
+
