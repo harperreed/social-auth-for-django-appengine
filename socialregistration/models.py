@@ -20,6 +20,7 @@ class AbstractSocialProfile(db.Model):
     internal_username = db.StringProperty()
     real_name = db.StringProperty()
     email = db.EmailProperty()
+    pic_url = db.StringProperty()
     
         
     def get_internal_username(self):
@@ -27,18 +28,19 @@ class AbstractSocialProfile(db.Model):
             self.internal_username = self.generate_internal_username()
         return self.internal_username
     
-    def generate_internal_username(self, seed = 0):
+    def generate_internal_username(self, seed = False):
         """
         Eventually this should be looking at a base profile and pulling as much basic 
         information (first name, last name, email, etc) and parsing it accordingly.
         for now, it's some ugly thing like this.
         """
-        try:
-            username = self.username
-        except:
-            pass
+        username = ''
+        username = self.real_name
         if not username:
-            username = self.real_name
+            try:
+                username = self.username
+            except:
+                pass
         if not username:
             username = self.email
         if not username:
@@ -48,14 +50,14 @@ class AbstractSocialProfile(db.Model):
                 pass
 
 
-        username = '%s%s'%(self.username,seed) 
+        username = '%s%s'%(username,seed) if seed else username
 
         try:
             username = User.all().filter('username = ', username)[0]
         except: 
             return username
         else:
-            seed += 1
+            seed = seed + 1 if seed else 1
             return self.generate_internal_username(seed=seed)
 
     

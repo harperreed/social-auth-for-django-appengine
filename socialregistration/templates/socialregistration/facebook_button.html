@@ -1,6 +1,7 @@
 {% if user.facebook_profiles %}
 {% for profile in user.facebook_profiles %}
-	connected to facebook as {{ profile.username}}
+	<img src="{{profile.pic_url}}" alt="Facebook profile image for {{profile.real_name}}"></img>
+	connected to facebook as <a href="http://www.facebook.com/{{ profile.username}}">{{profile.real_name}}</a>
 {% endfor %}
 {% else %}
 <form class="connect-button" name="login" method="post" action="{% if logged_in %}{% url facebook_connect %}{% else %}{% url facebook_login %}{% endif %}">

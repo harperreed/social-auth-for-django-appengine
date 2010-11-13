@@ -2,7 +2,10 @@
 <h2>Linked OpenIDs</h2>
 <ul>
 {% for profile in user.openid_profiles %}
-<li><a href="{{ profile.identity }}">{{profile.identity}}</a></li>
+<li>
+	<img src="{{profile.pic_url}}" alt="Profile image for {{profile.real_name}}"></img>
+	connected as <a href="{{ profile.identity}}">{{profile.real_name}}</a>
+</li>
 {% endfor %}
 </ul>
 {% endif %}

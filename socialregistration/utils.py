@@ -1,7 +1,8 @@
 """
 Created on 22.09.2009
+Updated on 19.12.2009
 
-@author: alen
+@author: alen, pinda
 Inspired by:
     http://github.com/leah/python-oauth/blob/master/oauth/example/client.py
     http://github.com/facebook/tornado/blob/master/tornado/auth.py
@@ -10,6 +11,7 @@ import time
 import base64
 import urllib
 import urllib2
+from xml.dom import minidom
 
 #from oauth import oauth
 import oauth as oauth
@@ -20,7 +22,7 @@ from openid.association import Association as OIDAssociation
 from openid.extensions import sreg as oid_sreg,\
                               ax as oid_ax
 
-from django.http import HttpResponseRedirect, HttpResponseServerError
+from django.http import HttpResponseRedirect
 from django.core.urlresolvers import reverse
 from django.utils.translation import gettext as _
 
@@ -31,6 +33,13 @@ from django.contrib.sites.models import Site
 
 from socialregistration.models import OpenIDStore as OpenIDStoreModel, OpenIDNonce
 
+USE_HTTPS = bool(getattr(settings, 'SOCIALREGISTRATION_USE_HTTPS', False))
+
+def _https():
+    if USE_HTTPS:
+        return 's'
+    else:
+        return ''
 
 class OpenIDStore(OIDStore):
     max_nonce_age = 6 * 60 * 60
@@ -48,18 +57,12 @@ class OpenIDStore(OIDStore):
         
     
     def getAssociation(self, server_url, handle=None):
-        stored_assocs = OpenIDStoreModel.all()
-        stored_assocs.filter('server_url =',server_url)
-        #stored_assocs = OpenIDStoreModel.filter(
-        #    server_url=server_url
-        #)
-
-        
+        stored_assocs = OpenIDStoreModel.all().filter(
+            'server_url = ', server_url
+        )
         if handle:
-            #stored_assocs = stored_assocs.filter(handle=handle)
-            stored_assocs = stored_assocs.filter('handle =',handle)
+            stored_assocs = stored_assocs.filter('handle = ',handle)
         
-        #stored_assocs.order_by('-issued')
         stored_assocs.order('-issued')
         
         if stored_assocs.count() == 0:
@@ -74,12 +77,20 @@ class OpenIDStore(OIDStore):
         
         return assoc
 
+    def removeAssociation(self, server_url, handle):
+        try:
+            assoc = OpenIDStoreModel.all().filter('server_url=',server_url)
+            assoc.filter('handle=', handle)
+            assoc.delete()
+            return True
+        except OpenIDStoreModel.DoesNotExist:
+            return False
+
     def useNonce(self, server_url, timestamp, salt):
         try:
-            nonce = OpenIDNonce.all()
-            nonce.filter('server_url =',server_url)
-            nonce.filter('timestamp =',timestamp)
-            nonce.filter('salt =',salt)
+            nonce = OpenIDNonce.all().filter('server_url=',server_url)
+            nonce.filter('timestamp=',timestamp)
+            nonce.filter('salt=',salt)
             nonce = nonce.fetch(1)
             nonce = nonce[0]
         except:
@@ -92,7 +103,7 @@ class OpenIDStore(OIDStore):
             return True
         
         return False
-            
+
 _ax_sreg_mapping = {
     'email': 'http://axschema.org/contact/email',
     'nickname': 'http://axschema.org/namePerson/friendly',
@@ -103,6 +114,7 @@ _ax_sreg_mapping = {
     'country': 'http://axschema.org/contact/country/home',
     'language': 'http://axschema.org/pref/language',
     'timezone': 'http://axschema.org/pref/timezone',
+    'image': 'http://axschema.org/media/image/default',
 }           
 
 class OpenID(object):
@@ -119,7 +131,6 @@ class OpenID(object):
         self.store = OpenIDStore()
         self.consumer = openid.Consumer(self.request.session, self.store)
         self.sreg = getattr(settings, 'OPENID_REGISTRATION_FIELDS', None)
-
         self.result = None
     
     def get_redirect(self):
@@ -136,7 +147,7 @@ class OpenID(object):
                                                        alias=attribute))
             auth_request.addExtension(ax_request)
         redirect_url = auth_request.redirectURL(
-            'http://%s/' % Site.objects.get_current().domain,
+            'http%s://%s/' % (_https(), Site.objects.get_current().domain),
             self.return_to
         )
         return HttpResponseRedirect(redirect_url)
@@ -144,8 +155,9 @@ class OpenID(object):
     def complete(self):
         self.result = self.consumer.complete(
             dict(self.request.GET.items()),
-            'http://%s%s' % (Site.objects.get_current(), self.request.path)
+            'http%s://%s%s' % (_https(), Site.objects.get_current(), self.request.path)
         )
+
         if self.result.status == openid.SUCCESS and self.sreg:
             self._sreg_response = oid_sreg.SRegResponse.fromSuccessResponse(self.result)
             self._ax_response = oid_ax.FetchResponse.fromSuccessResponse(self.result)
@@ -158,11 +170,11 @@ class OpenID(object):
                         val = self._ax_response.data[_ax_sreg_mapping[key]]
                         if len(val):
                             self.registration_data[key] = val[0]
-                
+        
     def is_valid(self):
         if self.result is None:
             self.complete()
-            
+                    
         return self.result.status == openid.SUCCESS
 
 class OAuthClient(oauth.OAuthClient):
@@ -172,7 +184,7 @@ class OAuthClient(oauth.OAuthClient):
     """
     
     def __init__(self, request, consumer_key, consumer_secret,
-        request_token_url, access_token_url, authorization_url, callback_url):
+        request_token_url, access_token_url, authorization_url, callback_url, parameters=None):
     
         self.request = request
     
@@ -182,27 +194,37 @@ class OAuthClient(oauth.OAuthClient):
     
         self.consumer = oauth.OAuthConsumer(consumer_key, consumer_secret)
         self.signature_method = oauth.OAuthSignatureMethod_HMAC_SHA1()
+
+        self.parameters = parameters
         
         self.errors = []
         
         self.callback_url = callback_url
-
     
     def _get_response(self, oauth_request):
         try:
             return urllib2.urlopen(oauth_request.to_url()).read()
-        except:
-            raise 'We couldn\'t reach the service. Please try again later.'
+        except urllib2.HTTPError, e:
+            raise Exception('%s on %s' % (e, oauth_request.to_url()))
         
     def get_request_token(self):
         """
         Get a request token
         """
         oauth_request = oauth.OAuthRequest.from_consumer_and_token(
-            self.consumer, http_url=self.request_token_url
+            self.consumer, http_url=self.request_token_url,
+            parameters=self.parameters
         )
         oauth_request.sign_request(self.signature_method, self.consumer, None)
         response = self._get_response(oauth_request)
+        
+        if response.startswith('{'):
+            # Response is in json convert to string
+            oauth_token = simplejson.loads(response)['oauth_token']
+            oauth_token_secret = simplejson.loads(response)['oauth_token_secret']
+
+            response = 'oauth_token=' + oauth_token + '&oauth_token_secret=' + oauth_token_secret
+            
         return oauth.OAuthToken.from_string(response)
     
     def get_access_token(self):
@@ -210,10 +232,20 @@ class OAuthClient(oauth.OAuthClient):
         Get an access token
         """
         oauth_request = oauth.OAuthRequest.from_consumer_and_token(
-            self.consumer, http_url=self.access_token_url, token=self.token
+            self.consumer, http_url=self.access_token_url, token=self.token,
+            parameters=self.parameters
         )
         oauth_request.sign_request(self.signature_method, self.consumer, self.token)
         response = self._get_response(oauth_request)
+
+        if response.startswith('<?xml'):
+            # Response is in xml convert to string
+            xml = minidom.parseString(response)
+            oauth_token = xml.getElementsByTagName('oauth_token')[0].childNodes[0].nodeValue
+            oauth_token_secret = xml.getElementsByTagName('oauth_token_secret')[0].childNodes[0].nodeValue
+  
+            response = 'oauth_token=' + oauth_token + '&oauth_token_secret=' + oauth_token_secret
+        
         return oauth.OAuthToken.from_string(response)
     
     def token_prefix(self):
@@ -222,7 +254,7 @@ class OAuthClient(oauth.OAuthClient):
         more than one single oauth provider's access key in the session 
         """
         if getattr(self, '_prefix', None) is None:
-            self._prefix = urllib2.urlparse.urlparse(self.request_token_url).netloc
+            self._prefix = urllib2.urlparse.urlparse(self.request_token_url)[1] # netloc
         return self._prefix
     
     @property
@@ -246,8 +278,11 @@ class OAuthClient(oauth.OAuthClient):
         oauth_request = oauth.OAuthRequest.from_consumer_and_token(
             self.consumer,
             http_url=self.authorization_url,
-            token=self.token
+            token=self.token,
         )
+        if self.callback_url:
+            oauth_request.parameters['oauth_callback'] = Site.objects.get_current().domain + reverse(self.callback_url)
+
         oauth_request.sign_request(self.signature_method, self.consumer, self.token)
         return oauth_request.to_url()
     
@@ -269,7 +304,7 @@ class OAuthClient(oauth.OAuthClient):
             return False
         
         self._token = oauth.OAuthToken.from_string(self.session_token())
-        
+
         if not self.token.key == self.request.GET.get('oauth_token', 'no-token-given'):
             self.errors.append(_('The given authorization tokens do not match.'))
             return False
@@ -289,13 +324,13 @@ class OAuth(object):
         self.signature_method = oauth.OAuthSignatureMethod_HMAC_SHA1()
         
         self.request_token_url = request_token_url
-
+        
     def token_prefix(self):
         """ 
         Create a prefix for the token so we can hold multiple different oauth
         tokens in the session 
         """
-        return urllib2.urlparse.urlparse(self.request_token_url).netloc
+        return urllib2.urlparse.urlparse(self.request_token_url)[1]
 
     @property
     def access_token(self):
@@ -321,8 +356,8 @@ class OAuth(object):
         TODO: Add POST support"""
         try:
             return urllib2.urlopen(oauth_request.to_url()).read()
-        except:
-            raise HttpResponseServerError(_('We couldn\'t reach the service. Please try again later'))
+        except urllib2.HTTPError, e:
+            raise Exception('%s on %s' % (e, oauth_request.to_url()))
 
     def query(self, url, parameters=None):
         return self.get_response(

@@ -1,6 +1,7 @@
 {% if user.twitter_profiles %}
 {% for profile in user.twitter_profiles %}
-	connected to twitter as {{ profile.username}}
+	<img src="{{profile.pic_url}}" alt="Twitter profile image for {{profile.real_name}}"></img>
+	connected to twitter as <a href="http://www.twitter.com/{{ profile.username}}">@{{profile.username}}</a>
 {% endfor %}
 {% else %}
 <form class="connect-button" name="login" method="post" action="{% url twitter_redirect %}">
