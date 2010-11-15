@@ -133,7 +133,7 @@ def facebook_login(request, template='socialregistration/facebook.html',
     if user is None:
         user = authenticate(uid=fb.uid)
         fb_profile = fb.users.getInfo(fb.uid, ['name','email','pic_square','username', ])[0]
-        request.session['social_suggested_username'] = ''.join(fb_profile['name'].split(' ')[:2])
+        request.session['social_suggested_username'] = fb_profile['username']
         request.session['socialregistration_profile'] = FacebookProfile(
             uid=fb.uid,
             username = fb_profile['username'],
@@ -243,7 +243,7 @@ def twitter(request, account_inactive_template='socialregistration/account_inact
         )
 
         user = User(username=profile.real_name)
-        request.session['social_suggested_username'] = user_info['name']
+        request.session['social_suggested_username'] = user_info['screen_name']
         request.session['socialregistration_profile'] = profile
         request.session['socialregistration_user'] = user
         request.session['next'] = _get_next(request)
