@@ -227,6 +227,8 @@ def twitter(request, account_inactive_template='socialregistration/account_inact
                 username=user_info['screen_name'], 
                 real_name=user_info['name'],
                 pic_url = user_info['profile_image_url'],
+                token_key = client.token().key,
+                token_secret = client.token().secret,
             )
             profile.save()
 
@@ -240,6 +242,8 @@ def twitter(request, account_inactive_template='socialregistration/account_inact
             username=user_info['screen_name'], 
             real_name=user_info['name'],
             pic_url = user_info['profile_image_url'],
+            token_key = client.token().key,
+            token_secret = client.token().secret,
         )
 
         user = User(username=profile.real_name)

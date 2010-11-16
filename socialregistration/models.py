@@ -80,6 +80,8 @@ class TwitterProfile(AbstractSocialProfile):
     site = db.ReferenceProperty(Site, default=Site.objects.get_current())
     twitter_id =  db.IntegerProperty()
     username = db.StringProperty()
+    token_key = db.StringProperty()
+    token_secret = db.StringProperty()
 
     def __unicode__(self):
         return '%s: %s' % (self.user, self.twitter_id)
