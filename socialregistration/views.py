@@ -45,8 +45,7 @@ def _get_next(request):
     else:
         return getattr(settings, 'LOGIN_REDIRECT_URL', '/')
 
-def setup(request, template='socialregistration/setup.html',
-    form_class=UserForm, extra_context=dict()):
+def setup(request, template='socialregistration/setup.html', form_class=UserForm, extra_context=dict()):
     """
     Setup view to create a username & set email address after authentication
     """
@@ -114,8 +113,7 @@ def setup(request, template='socialregistration/setup.html',
         return HttpResponseRedirect(_get_next(request))
 
 
-def facebook_login(request, template='socialregistration/facebook.html',
-    extra_context=dict(), account_inactive_template='socialregistration/account_inactive.html'):
+def facebook_login(request, template='socialregistration/facebook.html', extra_context=dict(), account_inactive_template='socialregistration/account_inactive.html'):
     """
     View to handle the Facebook login
     """
@@ -157,8 +155,7 @@ def facebook_login(request, template='socialregistration/facebook.html',
 
     return HttpResponseRedirect(_get_next(request))
 
-def facebook_connect(request, template='socialregistration/facebook.html',
-    extra_context=dict()):
+def facebook_connect(request, template='socialregistration/facebook.html', extra_context=dict()):
     """
     View to handle connecting existing accounts with facebook
     """
@@ -203,8 +200,7 @@ def logout(request, redirect_url=None):
 
     return HttpResponseRedirect(url)
 
-def twitter(request, account_inactive_template='socialregistration/account_inactive.html',
-    extra_context=dict()):
+def twitter(request, account_inactive_template='socialregistration/account_inactive.html', extra_context=dict()):
     """
     Actually setup/login an account relating to a twitter user after the oauth
     process is finished successfully
@@ -271,9 +267,7 @@ def friendfeed(request):
     """
     raise NotImplementedError()
 
-def oauth_redirect(request, consumer_key=None, secret_key=None,
-    request_token_url=None, access_token_url=None, authorization_url=None,
-    callback_url=None, parameters=None):
+def oauth_redirect(request, consumer_key=None, secret_key=None, request_token_url=None, access_token_url=None, authorization_url=None, callback_url=None, parameters=None):
     """
     View to handle the OAuth based authentication redirect to the service provider
     """
@@ -282,10 +276,7 @@ def oauth_redirect(request, consumer_key=None, secret_key=None,
         request_token_url, access_token_url, authorization_url, callback_url, parameters)
     return client.get_redirect()
 
-def oauth_callback(request, consumer_key=None, secret_key=None,
-    request_token_url=None, access_token_url=None, authorization_url=None,
-    callback_url=None, template='socialregistration/oauthcallback.html',
-    extra_context=dict(), parameters=None):
+def oauth_callback(request, consumer_key=None, secret_key=None, request_token_url=None, access_token_url=None, authorization_url=None, callback_url=None, template='socialregistration/oauthcallback.html', extra_context=dict(), parameters=None):
     """
     View to handle final steps of OAuth based authentication where the user
     gets redirected back to from the service provider
@@ -321,8 +312,7 @@ def openid_redirect(request):
     )
     return client.get_redirect()
 
-def openid_callback(request, template='socialregistration/openid.html',
-    extra_context=dict(), account_inactive_template='socialregistration/account_inactive.html'):
+def openid_callback(request, template='socialregistration/openid.html', extra_context=dict(), account_inactive_template='socialregistration/account_inactive.html'):
     """
     Catches the user when he's redirected back from the provider to our site
     """
@@ -390,3 +380,46 @@ def openid_callback(request, template='socialregistration/openid.html',
         dict(),
         context_instance=RequestContext(request)
     )
+
+def combined_login(request,  template='socialregistration/login_form.html'):
+    if request.POST:
+        openid_identifier = request.POST.get('openid_identifier', None)
+        if openid_identifier =='facebook_connect':
+            return HttpResponseRedirect(reverse('facebook_login'))
+        if openid_identifier =='twitter_oauth':
+            return HttpResponseRedirect(reverse('twitter_redirect') )
+        # i think you can push the GET params in the reverse function
+        return HttpResponseRedirect(reverse('openid_redirect') + "?openid_provider="+ openid_identifier)
+    else:
+        return render_to_response(
+            template, context_instance=RequestContext(request)
+        )
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

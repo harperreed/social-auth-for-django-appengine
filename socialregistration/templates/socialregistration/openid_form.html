@@ -3,15 +3,15 @@
 <ul>
 {% for profile in user.openid_profiles %}
 <li>
-	<img src="{{profile.pic_url}}" alt="Profile image for {{profile.real_name}}"></img>
-	connected as <a href="{{ profile.identity}}">{{profile.real_name}}</a>
+    <img src="{{profile.pic_url}}" alt="Profile image for {{profile.real_name}}"></img>
+    connected as <a href="{{ profile.identity}}">{{profile.real_name}}</a>
 </li>
 {% endfor %}
 </ul>
 {% endif %}
 <p>Add an OpenID:</p>
 <form action="{% url openid_redirect %}" method="GET">
-	<label>url:</label>
+    <label>url:</label>
     <input type="text" name="openid_provider" />
     <input type="submit" value="Connect with OpenID" />
 </form>

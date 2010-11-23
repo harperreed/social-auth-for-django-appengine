@@ -84,5 +84,7 @@ if getattr(settings, 'FRIENDFEED_CONSUMER_KEY', None) is not None:
 
 urlpatterns = urlpatterns + patterns('',
     url('^openid/redirect/', 'socialregistration.views.openid_redirect', name='openid_redirect'),
-    url('^openid/callback/', 'socialregistration.views.openid_callback', name='openid_callback')
+    url('^openid/callback/', 'socialregistration.views.openid_callback', name='openid_callback'),
+
+    url('^login/', 'socialregistration.views.combined_login', name='combined_login'),
 )
