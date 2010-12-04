@@ -5,6 +5,7 @@ Created on 22.09.2009
 """
 import uuid
 import sys
+import md5
 
 from django.conf import settings
 from django.template import RequestContext
@@ -23,6 +24,7 @@ from socialregistration.utils import (OAuthClient, OAuthTwitter,
 from socialregistration.models import FacebookProfile, TwitterProfile, OpenIDProfile
 
 from facebook import Facebook
+import urllib
 
 
 FB_ERROR = _('We couldn\'t validate your Facebook credentials')
@@ -49,8 +51,11 @@ def setup(request, template='socialregistration/setup.html', form_class=UserForm
     """
     Setup view to create a username & set email address after authentication
     """
+
+
     if 'socialregistration_profile' not in request.session:
         return HttpResponseRedirect(_get_next(request))
+
     
     if not GENERATE_USERNAME and False:
         # User can pick own username
@@ -89,17 +94,24 @@ def setup(request, template='socialregistration/setup.html', form_class=UserForm
             context_instance=RequestContext(request)
         )
     else:
+    
         # Generate user and profile
         user = request.session['socialregistration_user']
         
+        
         user.username = str(uuid.uuid4())[:30]
-        if request.session['social_suggested_username'] is not None:
+        if request.session['social_suggested_username']:
             user.username = request.session['social_suggested_username']
+
         user.save()
 
         profile = request.session['socialregistration_profile']
         profile.user = user
         profile.save()
+
+        if profile.email:
+            user.email = profile.email
+            user.save()
 
         # Authenticate and login
         user = profile.authenticate()
@@ -119,9 +131,36 @@ def facebook_login(request, template='socialregistration/facebook.html', extra_c
     """
     fb = Facebook(settings.FACEBOOK_API_KEY, settings.FACEBOOK_SECRET_KEY)
     if not fb.check_session(request):
+
+        facebook_url = "http://www.facebook.com/login.php?"
+
         extra_context.update(
             dict(error=FB_ERROR)
         )
+
+        args = {
+            "api_key": settings.FACEBOOK_API_KEY,
+            "v": "1.0",
+            "fbconnect": "true",
+            "display": "page",
+            "next":request.build_absolute_uri( _get_next(request)),
+            "return_session": "true",
+        }
+
+
+        #if extended_permissions:
+        #    if isinstance(extended_permissions, basestring):
+        #        extended_permissions = [extended_permissions]
+        #    args["req_perms"] = ",".join(extended_permissions)
+        #self.redirect("http://www.facebook.com/login.php?" +
+        #              urllib.urlencode(args))
+
+        facebook_url = facebook_url + urllib.urlencode(args) 
+
+        return HttpResponseRedirect(facebook_url)
+
+
+
         return render_to_response(
             template, extra_context, context_instance=RequestContext(request)
         )
@@ -223,8 +262,6 @@ def twitter(request, account_inactive_template='socialregistration/account_inact
                 username=user_info['screen_name'], 
                 real_name=user_info['name'],
                 pic_url = user_info['profile_image_url'],
-                token_key = client.token().key,
-                token_secret = client.token().secret,
             )
             profile.save()
 
@@ -238,8 +275,6 @@ def twitter(request, account_inactive_template='socialregistration/account_inact
             username=user_info['screen_name'], 
             real_name=user_info['name'],
             pic_url = user_info['profile_image_url'],
-            token_key = client.token().key,
-            token_secret = client.token().secret,
         )
 
         user = User(username=profile.real_name)
@@ -350,16 +385,34 @@ def openid_callback(request, template='socialregistration/openid.html', extra_co
             user = User(username='openid')
             request.session['social_suggested_username'] = request.GET.get('openid.ax.value.nickname')
             request.session['socialregistration_user'] = user
-            request.session['socialregistration_profile'] = OpenIDProfile(
-                identity=request.GET.get('openid.claimed_id'),
-                real_name=request.GET.get('openid.ax.value.fullname'),
-                internal_username=request.GET.get('openid.ax.value.nickname'),
-                email=request.GET.get('openid.ax.value.email'),
-                pic_url=request.GET.get('openid.ax.value.image'),
-            )
+            if request.GET.get('openid.sreg.email'):
+                request.session['social_suggested_username'] = request.GET.get('openid.sreg.nickname')
+                request.session['socialregistration_profile'] = OpenIDProfile(
+                    identity=request.GET.get('openid.claimed_id'),
+                    real_name=request.GET.get('openid.sreg.fullname'),
+                    internal_username=request.GET.get('openid.sreg.nickname'),
+                    email=request.GET.get('openid.sreg.email'),
+                    pic_url="http://www.gravatar.com/avatar/" + md5.md5(request.GET.get('openid.sreg.email')).hexdigest(),
+                )
+            elif request.GET.get('openid.ext1.value.email'):
+                request.session['social_suggested_username'] = request.GET.get('openid.ext1.value.email').split('@')[0]
+                request.session['socialregistration_profile'] = OpenIDProfile(
+                    identity=request.GET.get('openid.claimed_id'),
+                    internal_username=request.session['social_suggested_username'],
+                    email=request.GET.get('openid.ext1.value.email'),
+                    pic_url= "http://www.gravatar.com/avatar/" + md5.md5(request.GET.get('openid.ext1.value.email')).hexdigest() ,
+                )
+                
+            else:
+                request.session['socialregistration_profile'] = OpenIDProfile(
+                    identity=request.GET.get('openid.claimed_id'),
+                    real_name=request.GET.get('openid.ax.value.fullname'),
+                    internal_username=request.GET.get('openid.ax.value.nickname'),
+                    email=request.GET.get('openid.ax.value.email'),
+                    pic_url=request.GET.get('openid.ax.value.image'),
+                )
             for key, value in getattr(client, 'registration_data', {}).items():
                 request.session['social_suggested_%s' % key] = value
-            request.session['social_suggested_username'] = request.GET.get('openid.ax.value.nickname')
             return HttpResponseRedirect(reverse('socialregistration_setup'))
         else:
             login(request, user)
@@ -394,32 +447,3 @@ def combined_login(request,  template='socialregistration/login_form.html'):
         return render_to_response(
             template, context_instance=RequestContext(request)
         )
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-

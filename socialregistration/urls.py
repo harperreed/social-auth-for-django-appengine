@@ -87,4 +87,5 @@ urlpatterns = urlpatterns + patterns('',
     url('^openid/callback/', 'socialregistration.views.openid_callback', name='openid_callback'),
 
     url('^login/', 'socialregistration.views.combined_login', name='combined_login'),
+    url('^logout/', 'socialregistration.views.logout', name='logout'),
 )

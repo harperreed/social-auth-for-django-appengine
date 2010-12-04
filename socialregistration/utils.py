@@ -383,3 +383,13 @@ class OAuthFriendFeed(OAuth):
     def get_user_info(self):
         user = simplejson.loads(self.query(self.url))
         return user
+
+def login_required(func):
+    def _wrapper(request, *args, **kw):
+        user = request.user 
+        if request.user.is_authenticated():
+            return func(request, *args, **kw)
+        else:
+            return HttpResponseRedirect('/social/login/')
+    return _wrapper
+
