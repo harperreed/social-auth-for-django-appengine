@@ -29,6 +29,16 @@ var providers_large = {
     },
 };
 var providers_small = {
+    wordpress: {
+        name: 'Wordpress',
+        label: 'Enter your Wordpress.com username.',
+        url: 'http://{username}.wordpress.com/'
+    },
+    blogger: {
+        name: 'Blogger',
+        label: 'Your Blogger account',
+        url: 'http://{username}.blogspot.com/'
+    },
     openid: {
         name: 'OpenID',     
         label: 'Enter your OpenID.',
@@ -54,26 +64,7 @@ var providers_small = {
         label: 'Enter your Flickr username.',
         url: 'http://flickr.com/{username}/'
     },
-    technorati: {
-        name: 'Technorati',
-        label: 'Enter your Technorati username.',
-        url: 'http://technorati.com/people/technorati/{username}/'
-    },
-    wordpress: {
-        name: 'Wordpress',
-        label: 'Enter your Wordpress.com username.',
-        url: 'http://{username}.wordpress.com/'
-    },
-    blogger: {
-        name: 'Blogger',
-        label: 'Your Blogger account',
-        url: 'http://{username}.blogspot.com/'
-    },
-    vidoop: {
-        name: 'Vidoop',
-        label: 'Your Vidoop username',
-        url: 'http://{username}.myvidoop.com/'
-    },
+   
     claimid: {
         name: 'ClaimID',
         label: 'Your ClaimID username',
@@ -108,14 +99,14 @@ var openid = {
         // add box for each provider
         for (id in providers_large) {
         
-            openid_btns.append(this.getBoxHTML(providers_large[id], 'large', '.gif'));
+            openid_btns.append(this.getBoxHTML(providers_large[id], 'large', '.png'));
         }
         if (providers_small) {
             openid_btns.append('<br/>');
             
             for (id in providers_small) {
             
-                openid_btns.append(this.getBoxHTML(providers_small[id], 'small', '.ico'));
+                openid_btns.append(this.getBoxHTML(providers_small[id], 'small', '.png'));
             }
         }
         
@@ -129,8 +120,9 @@ var openid = {
     getBoxHTML: function(provider, box_size, image_ext) {
             
         var box_id = provider["name"].toLowerCase();
+        path =  this.img_path + box_size + "/"
         return '<a title="'+provider["name"]+'" href="javascript: openid.signin(\''+ box_id +'\');"' +
-                ' style="background: #FFF url(' + this.img_path + box_id + image_ext+') no-repeat center center" ' + 
+                ' style="background: #FFF url(' + path + box_id + image_ext+') no-repeat center center" ' + 
                 'class="' + box_id + ' openid_' + box_size + '_btn"></a>';    
     
     },
