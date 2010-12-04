@@ -385,7 +385,15 @@ def openid_callback(request, template='socialregistration/openid.html', extra_co
             user = User(username='openid')
             request.session['social_suggested_username'] = request.GET.get('openid.ax.value.nickname')
             request.session['socialregistration_user'] = user
-            if request.GET.get('openid.sreg.email'):
+            if request.GET.get('openid.ext2.value.email'):
+                request.session['social_suggested_username'] = request.GET.get('openid.ext2.value.email').split('@')[0]
+                request.session['socialregistration_profile'] = OpenIDProfile(
+                    identity=request.GET.get('openid.claimed_id'),
+                    internal_username=request.session['social_suggested_username'],
+                    email=request.GET.get('openid.ext2.value.email'),
+                    pic_url= "http://www.gravatar.com/avatar/" + md5.md5(request.GET.get('openid.ext2.value.email')).hexdigest() ,
+                )
+            elif request.GET.get('openid.sreg.email'):
                 request.session['social_suggested_username'] = request.GET.get('openid.sreg.nickname')
                 request.session['socialregistration_profile'] = OpenIDProfile(
                     identity=request.GET.get('openid.claimed_id'),
@@ -402,7 +410,6 @@ def openid_callback(request, template='socialregistration/openid.html', extra_co
                     email=request.GET.get('openid.ext1.value.email'),
                     pic_url= "http://www.gravatar.com/avatar/" + md5.md5(request.GET.get('openid.ext1.value.email')).hexdigest() ,
                 )
-                
             else:
                 request.session['socialregistration_profile'] = OpenIDProfile(
                     identity=request.GET.get('openid.claimed_id'),
@@ -413,6 +420,7 @@ def openid_callback(request, template='socialregistration/openid.html', extra_co
                 )
             for key, value in getattr(client, 'registration_data', {}).items():
                 request.session['social_suggested_%s' % key] = value
+
             return HttpResponseRedirect(reverse('socialregistration_setup'))
         else:
             login(request, user)
