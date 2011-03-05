@@ -78,13 +78,13 @@ class OpenIDStore(OIDStore):
         return assoc
 
     def removeAssociation(self, server_url, handle):
-        try:
-            assoc = OpenIDStoreModel.all().filter('server_url=',server_url)
-            assoc.filter('handle=', handle)
-            assoc.delete()
-            return True
-        except OpenIDStoreModel.DoesNotExist:
+
+        assoc = OpenIDStoreModel.all().filter('server_url=',server_url).filter('handle=', handle).get()
+        if assoc is None:
             return False
+        
+        assoc.delete()
+        return True
 
     def useNonce(self, server_url, timestamp, salt):
         try:
