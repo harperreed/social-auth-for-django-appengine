@@ -443,6 +443,7 @@ def openid_callback(request, template='socialregistration/openid.html', extra_co
     )
 
 def combined_login(request,  template='socialregistration/login_form.html'):
+    request.session['next'] = _get_next(request)
     if request.POST:
         openid_identifier = request.POST.get('openid_identifier', None)
         if openid_identifier =='facebook_connect':
