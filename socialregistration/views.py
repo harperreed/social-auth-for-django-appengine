@@ -112,6 +112,10 @@ def setup(request, template='socialregistration/setup.html', form_class=UserForm
         if profile.email:
             user.email = profile.email
             user.save()
+	if profile.realname:
+	    user.firstname = profile.realname.partition(' ')[0]
+	    user.lastname = profile.realname.partition(' ')[2]
+	    user.save()
 
         # Authenticate and login
         user = profile.authenticate()
